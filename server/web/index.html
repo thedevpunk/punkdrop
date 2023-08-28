@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>punkdrop</title>
+  </head>
+  <body>
+    <h1>Welcome to punkdrop</h1>
+    <h2>Web file sharing made easy</h2>
+    <p>Your generated key: <strong id="userKey"></strong></p>
+
+    <div>
+      <input type="file" id="file" />
+      <button onclick="sendFile()">Send File</button>
+    </div>
+
+    <div>
+      <label for="message">Message</label>
+      <div>
+        <textarea id="message"></textarea>
+      </div>
+      <label for="receiver">To</label>
+      <input type="text" id="receiver" />
+      <button onclick="sendToUser()">Send</button>
+    </div>
+
+    <div id="output"></div>
+
+    <script>
+      const userKey = "USER_KEY";
+      let socket;
+
+      function sendToUser() {
+        const to = document.getElementById("receiver");
+        const msg = document.getElementById("message");
+
+        const message = {
+          type: "message",
+          receiver: to.value,
+          content: msg.value,
+        };
+
+        socket.send(JSON.stringify(message));
+      }
+
+      function connectWebSocket() {
+        socket = new WebSocket(`ws://localhost:8080/ws?key=${userKey}`);
+
+        socket.onopen = function (event) {
+          appendMessage("WebSocket connected");
+        };
+
+        socket.onmessage = function (event) {
+          appendMessage("Received: " + event.data);
+        };
+
+        socket.onclose = function (event) {
+          appendMessage("WebSocket closed");
+        };
+      }
+
+      function sendFile() {
+        const fileInput = document.getElementById("file");
+        const file = fileInput.files[0];
+        if (!file) {
+          alert("Please select a file.");
+          return;
+        }
+
+        // Implement file sending logic here
+      }
+
+      function testConnection() {
+        socket.send("Hello, world!");
+      }
+
+      function appendMessage(message) {
+        const output = document.getElementById("output");
+        const p = document.createElement("p");
+        p.textContent = message;
+        output.appendChild(p);
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        connectWebSocket();
+
+        const keyElem = document.getElementById("userKey");
+        keyElem.textContent = userKey;
+      });
+    </script>
+  </body>
+</html>
