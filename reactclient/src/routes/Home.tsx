@@ -1,4 +1,3 @@
-/* eslint-disable no-async-promise-executor */
 import { FormEvent, useRef, useState } from "react";
 import { WebSocketMessage, useWebSocket } from "../hooks/useWebSocket";
 import { Button } from "../components/ui/button";
@@ -8,7 +7,7 @@ import { Input } from "../components/ui/input";
 import { Card } from "../components/ui/card";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Copy } from "lucide-react";
-import Drop from "@/components/Drop";
+import { Group, useGroups } from "@/hooks/useGroups";
 
 const generateRandomKey = (length: number) => {
   let result = "";
@@ -22,70 +21,71 @@ const generateRandomKey = (length: number) => {
 };
 
 function Home() {
-  const userKeyRef = useRef(generateRandomKey(10));
-  const [messages, setMessages] = useState<WebSocketMessage[]>([]);
+  const { groups, addGroup, removeGroup } = useGroups();
 
-  const [webSocketState, sendOverWebSocket] = useWebSocket({
-    url: `ws://localhost:8080/ws?key=${userKeyRef.current}`,
-    offerHandler: (message) =>
-      setMessages((messages) => [...messages, message]),
-    answerHandler: (message) =>
-      setMessages((messages) => [...messages, message]),
-    candidateHandler: (message) =>
-      setMessages((messages) => [...messages, message]),
-    textHandler: (message) => setMessages((messages) => [...messages, message]),
-  });
-
-  const submitSendMessage = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const receiver = event.currentTarget.receiver.value;
-    const content = event.currentTarget.message.value;
-
-    const message: WebSocketMessage = {
-      type: "text",
-      sender: userKeyRef.current,
-      receiver,
-      content,
+  const createNewGroup = () => {
+    const key = generateRandomKey(10);
+    const newGroup: Group = {
+      key,
+      name: key,
     };
-
-    setMessages((messages) => [...messages, message]);
-    sendOverWebSocket(message);
+    addGroup(newGroup);
   };
 
-  const handleCopyKeyToClipboard = () => {
-    navigator.clipboard.writeText(userKeyRef.current);
+  const deleteGroup = (key: string) => {
+    removeGroup(key);
   };
+
+  //   const userKeyRef = useRef(generateRandomKey(10));
+  //   const [messages, setMessages] = useState<WebSocketMessage[]>([]);
+
+  //   const [webSocketState, sendOverWebSocket] = useWebSocket({
+  //     url: `ws://localhost:8080/ws?key=${userKeyRef.current}`,
+  //     offerHandler: (message) =>
+  //       setMessages((messages) => [...messages, message]),
+  //     answerHandler: (message) =>
+  //       setMessages((messages) => [...messages, message]),
+  //     candidateHandler: (message) =>
+  //       setMessages((messages) => [...messages, message]),
+  //     textHandler: (message) => setMessages((messages) => [...messages, message]),
+  //   });
+
+  //   const submitSendMessage = (event: FormEvent<HTMLFormElement>) => {
+  //     event.preventDefault();
+
+  //  const receiver = event.currentTarget.receiver.value;
+  //  const content = event.currentTarget.message.value;
+
+  //  const message: WebSocketMessage = {
+  //    type: "text",
+  //    sender: userKeyRef.current,
+  //    receiver,
+  //    content,
+  //  };
+
+  //  setMessages((messages) => [...messages, message]);
+  //  sendOverWebSocket(message);
+  //   };
+
+  //   const handleCopyKeyToClipboard = () => {
+  //     navigator.clipboard.writeText(userKeyRef.current);
+  //   };
 
   return (
     <div className="h-screen w-screen bg-slate-50 flex items-center justify-center">
-      <Drop />
-      {/* <div className="flex gap-4">
+      <div className="flex gap-4">
         <Card>
-          <header className="font-bold h-16 flex items-center justify-between gap-2 px-8 py-4 border-b border-slate-100">
-            <div className="flex gap-2 items-center bg-slate-100 border border-slate-200 rounded-md px-4 h-10">
-              <p className="">{userKeyRef.current}</p>
-              <Button
-                variant={"link"}
-                className="px-0"
-                onClick={handleCopyKeyToClipboard}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
+          {/* header */}
+          <div className="font-bold h-16 flex items-center justify-between gap-2 px-8 py-4 border-b border-slate-100">
             <div className="flex gap-2 items-center">
-              <p>WebSocket</p>
-              <div
-                className={`w-4 h-4 rounded-lg ${
-                  webSocketState === "pending" ? " bg-yellow-300" : ""
-                }${webSocketState === "open" ? "bg-green-400" : ""}${
-                  webSocketState === "closed" ? "bg-red-400" : ""
-                }`}
-              ></div>
+              <p>Punkdrop</p>
             </div>
-          </header>
-          <main className="px-8 py-4">
-            <form onSubmit={submitSendMessage} className="flex gap-4 flex-col">
+          </div>
+          {/* body */}
+          <div className="px-8 py-4">
+            <p>Groups</p>
+
+            {/* <form onSubmit={() => null} className="flex gap-4 flex-col">
               <h2>Send messages via Websocket</h2>
               <Label htmlFor="receiver">To</Label>
               <Input
@@ -102,10 +102,10 @@ function Home() {
                 placeholder="Write your thoughts here..."
               />
               <Button>Send</Button>
-            </form>
-          </main>
+            </form> */}
+          </div>
         </Card>
-        <Card>
+        {/* <Card>
           <header className="font-bold h-16 flex items-center justify-between gap-2 px-8 py-4 border-b border-slate-100">
             <h2>WebSocket history</h2>
           </header>
@@ -141,8 +141,8 @@ function Home() {
               })}
             </ScrollArea>
           </main>
-        </Card>
-      </div> */}
+        </Card> */}
+      </div>
     </div>
   );
 }

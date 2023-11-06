@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import Group from "./routes/Group.tsx";
+import HomeBackup from "./routes/HomeBackup.tsx";
 import Home from "./routes/Home.tsx";
 
 const router = createBrowserRouter([
@@ -13,7 +14,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/group",
-    element: <div>Group</div>,
+    element: <Group />,
     errorElement: <div>Error, sry 😢</div>,
     children: [
       {
