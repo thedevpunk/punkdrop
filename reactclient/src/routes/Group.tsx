@@ -57,6 +57,46 @@ function Group() {
 
   return (
     <div className="h-screen w-screen bg-slate-50 flex items-center justify-center">
+      <Card className="w-full max-w-xl">
+        {/* header */}
+        <div className="font-bold h-16 flex items-center justify-between gap-2 px-8 py-4 border-b border-slate-100">
+          <div className="flex gap-2 items-center">
+            <p>Punkdrop</p>
+          </div>
+        </div>
+        {/* body */}
+        <div className="flex">
+          <div className="flex flex-col flex-grow gap-4 px-6 py-4 border-r border-slate-200">
+            Select a group from the list or create one if you don't have one
+            yet. <br />
+            You can share the group key with your friends so they can join your
+            group.
+          </div>
+          <div className="flex flex-col gap-4 px-6 py-4">
+            {groups.length === 0 && <p>No groups yet</p>}
+
+            <div className="flex flex-col gap-1">
+              {groups.map((group) => (
+                <Link
+                  to={`group/${group.key}`}
+                  className="px-4 py-2 rounded hover:bg-slate-100"
+                >
+                  {group.name}
+                </Link>
+              ))}
+            </div>
+
+            <Button className="w-full" onClick={createNewGroup}>
+              Create group
+            </Button>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+
+  return (
+    <div className="h-screen w-screen bg-slate-50 flex items-center justify-center">
       <div className="flex gap-4">
         <Card>
           <header className="font-bold h-16 flex items-center justify-between gap-2 px-8 py-4 border-b border-slate-100">

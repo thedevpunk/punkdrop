@@ -6,9 +6,7 @@ import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { Card } from "../components/ui/card";
 import { ScrollArea } from "../components/ui/scroll-area";
-import { Copy, X } from "lucide-react";
-import { Group, useGroups } from "@/hooks/useGroups";
-import { Link, useParams } from "react-router-dom";
+import { Copy } from "lucide-react";
 
 const generateRandomKey = (length: number) => {
   let result = "";
@@ -21,63 +19,71 @@ const generateRandomKey = (length: number) => {
   return result;
 };
 
-function Home() {
-  const { groups, addGroup, removeGroup } = useGroups();
+function Group() {
+  const userKeyRef = useRef(generateRandomKey(10));
+  const [messages, setMessages] = useState<WebSocketMessage[]>([]);
 
-  const createNewGroup = () => {
-    const key = generateRandomKey(10);
-    const newGroup: Group = {
-      key,
-      name: key,
-    };
-    addGroup(newGroup);
+  //   const [webSocketState, sendOverWebSocket] = useWebSocket({
+  //     url: `ws://localhost:8080/ws?key=${userKeyRef.current}`,
+  //     offerHandler: (message) =>
+  //       setMessages((messages) => [...messages, message]),
+  //     answerHandler: (message) =>
+  //       setMessages((messages) => [...messages, message]),
+  //     candidateHandler: (message) =>
+  //       setMessages((messages) => [...messages, message]),
+  //     textHandler: (message) => setMessages((messages) => [...messages, message]),
+  //   });
+
+  const submitSendMessage = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    //  const receiver = event.currentTarget.receiver.value;
+    //  const content = event.currentTarget.message.value;
+
+    //  const message: WebSocketMessage = {
+    //    type: "text",
+    //    sender: userKeyRef.current,
+    //    receiver,
+    //    content,
+    //  };
+
+    //  setMessages((messages) => [...messages, message]);
+    //  sendOverWebSocket(message);
   };
 
-  const deleteGroup = (key: string) => {
-    removeGroup(key);
+  const handleCopyKeyToClipboard = () => {
+    navigator.clipboard.writeText(userKeyRef.current);
   };
 
   return (
     <div className="h-screen w-screen bg-slate-50 flex items-center justify-center">
-      <Card className="w-full max-w-xl">
-        {/* header */}
-        <div className="font-bold h-16 flex items-center justify-between gap-2 px-8 py-4 border-b border-slate-100">
-          <div className="flex gap-2 items-center">
-            <p>Punkdrop</p>
-          </div>
-        </div>
-        {/* body */}
-        <div className="flex">
-          <div className="flex flex-col flex-grow gap-4 px-6 py-4 border-r border-slate-200">
-            Select a group from the list or create one if you don't have one
-            yet. <br />
-            You can share the group key with your friends so they can join your
-            group.
-          </div>
-          <div className="flex flex-col gap-4 px-6 py-4">
-            {groups.length === 0 && <p>No groups yet</p>}
-
-            <div className="flex flex-col gap-1">
-              {groups.map((group) => (
-                <Link
-                  to={`group/${group.key}`}
-                  className="px-4 py-2 rounded hover:bg-slate-100"
-                >
-                  {group.name}
-                  <Button onClick={(e) => e.preventDefault()}>
-                    <X />
-                  </Button>
-                </Link>
-              ))}
+      <div className="flex gap-4">
+        <Card>
+          <header className="font-bold h-16 flex items-center justify-between gap-2 px-8 py-4 border-b border-slate-100">
+            <div className="flex gap-2 items-center bg-slate-100 border border-slate-200 rounded-md px-4 h-10">
+              <p className="">{userKeyRef.current}</p>
+              <Button
+                variant={"link"}
+                className="px-0"
+                onClick={handleCopyKeyToClipboard}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
             </div>
-
-            <Button className="w-full" onClick={createNewGroup}>
-              Create group
-            </Button>
-          </div>
-        </div>
-
-        {/* <form onSubmit={() => null} className="flex gap-4 flex-col">
+            <div className="flex gap-2 items-center">
+              <p>WebSocket</p>
+              <div className={`w-4 h-4 rounded-lg bg-yellow-300`}></div>
+              {/* <div
+                className={`w-4 h-4 rounded-lg ${
+                  webSocketState === "pending" ? " bg-yellow-300" : ""
+                }${webSocketState === "open" ? "bg-green-400" : ""}${
+                  webSocketState === "closed" ? "bg-red-400" : ""
+                }`}
+              ></div> */}
+            </div>
+          </header>
+          <main className="px-8 py-4">
+            <form onSubmit={submitSendMessage} className="flex gap-4 flex-col">
               <h2>Send messages via Websocket</h2>
               <Label htmlFor="receiver">To</Label>
               <Input
@@ -94,9 +100,10 @@ function Home() {
                 placeholder="Write your thoughts here..."
               />
               <Button>Send</Button>
-            </form> */}
-      </Card>
-      {/* <Card>
+            </form>
+          </main>
+        </Card>
+        <Card>
           <header className="font-bold h-16 flex items-center justify-between gap-2 px-8 py-4 border-b border-slate-100">
             <h2>WebSocket history</h2>
           </header>
@@ -132,9 +139,10 @@ function Home() {
               })}
             </ScrollArea>
           </main>
-        </Card> */}
+        </Card>
+      </div>
     </div>
   );
 }
 
-export default Home;
+export default Group;
