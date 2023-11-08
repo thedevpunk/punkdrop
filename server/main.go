@@ -36,6 +36,9 @@ var connections = make(map[string]*websocket.Conn)
 
 var connectionMutex = sync.Mutex{}
 
+var groups = make(map[string][]string)
+var groupMutex = sync.Mutex{}
+
 func main() {
 	// config := webrtc.Configuration{
 	// 	ICEServers: []webrtc.ICEServer{
@@ -183,6 +186,21 @@ func handleWebSocketMessage(conn *websocket.Conn, userKey string, messageType in
 		sendMessageToUser(socketMessage.Receiver, message)
 	case "candidate":
 		sendMessageToUser(socketMessage.Receiver, message)
+	case "entergroup":
+		enterGroup(userKey, socketMessage.Content)
+		answer := SocketMessage{
+			Type:     "text",
+			Sender:   "server",
+			Receiver: userKey,
+			Content:  "You have entered group: " + socketMessage.Content,
+		}
+		msg, err := json.Marshal(answer)
+		if err != nil {
+			fmt.Println("Error marshalling JSON:", err)
+			return
+		}
+
+		sendMessageToUser(socketMessage.Sender, msg)
 	default:
 		fmt.Println("Unknown message type:", socketMessage.Type)
 	}
@@ -199,6 +217,24 @@ func handleWebSocketMessage(conn *websocket.Conn, userKey string, messageType in
 	// 		return
 	// 	}
 	// }
+}
+
+func enterGroup(userKey string, groupKey string) {
+	groupMutex.Lock()
+	defer groupMutex.Unlock()
+
+	if _, ok := groups[groupKey]; !ok {
+		groups[groupKey] = make([]string, 0)
+	}
+
+	// Does group contain userKey
+	for _, key := range groups[groupKey] {
+		if key == userKey {
+			return
+		}
+	}
+
+	groups[groupKey] = append(groups[groupKey], userKey)
 }
 
 func sendMessageToUser(userKey string, message []byte) {

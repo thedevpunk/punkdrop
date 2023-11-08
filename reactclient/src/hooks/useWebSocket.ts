@@ -47,7 +47,7 @@ import { useEffect, useRef, useState } from "react";
 // };
 
 export type WebSocketMessage = {
-  type: "welcome" | "offer" | "answer" | "candidate" | "text";
+  type: "welcome" | "offer" | "answer" | "candidate" | "text" | "entergroup";
   sender: string;
   receiver: string;
   content: string;

@@ -64,9 +64,6 @@ function Home() {
                   className="px-4 py-2 rounded hover:bg-slate-100"
                 >
                   {group.name}
-                  <Button onClick={(e) => e.preventDefault()}>
-                    <X />
-                  </Button>
                 </Link>
               ))}
             </div>
