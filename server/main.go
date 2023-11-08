@@ -38,7 +38,7 @@ var connections = make(map[string]*websocket.Conn)
 var connectionMutex = sync.Mutex{}
 
 var groups = make(map[string][]string)
-var groupMutex = sync.Mutex{}
+var groupMutex = &sync.RWMutex{}
 
 func main() {
 	// config := webrtc.Configuration{
@@ -74,6 +74,7 @@ func main() {
 	// fmt.Println("Offer SDP:", offer.SDP)
 
 	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/group", groupHandler)
 	http.HandleFunc("/ws", websocketHandler)
 
 	port := 8080
@@ -82,6 +83,28 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
+}
+
+func groupHandler(w http.ResponseWriter, r *http.Request) {
+	groupKey := r.URL.Query().Get("group")
+
+	groupMutex.RLock()
+	group, ok := groups[groupKey]
+	groupMutex.RUnlock()
+
+	if !ok {
+		http.Error(w, "Group not found", http.StatusNotFound)
+		return
+	}
+
+	rtn, err := json.Marshal(group)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(rtn)
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
