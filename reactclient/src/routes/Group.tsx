@@ -29,6 +29,7 @@ function Group() {
   const { groups, removeGroup } = useGroups();
 
   const group = groups.find((group) => group.key === id) ?? null;
+  const [members, setMembers] = useState<string[]>([]);
 
   const userKeyRef = useRef(generateRandomKey(10));
   const [messages, setMessages] = useState<WebSocketMessage[]>([]);
@@ -42,6 +43,9 @@ function Group() {
     candidateHandler: (message) =>
       setMessages((messages) => [...messages, message]),
     textHandler: (message) => setMessages((messages) => [...messages, message]),
+    groupenteredHandler: (message) => {
+      setMembers(message.content.split(","));
+    },
   });
 
   useEffect(() => {
@@ -56,7 +60,7 @@ function Group() {
       };
       sendOverWebSocket(message);
     }
-  }, [webSocketState]);
+  }, [webSocketState, group]);
 
   const submitSendMessage = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -80,6 +84,10 @@ function Group() {
 
     navigator.clipboard.writeText(group.key);
     setCopied(true);
+  };
+
+  const handleSubmitSendFileForm = (event: FormEvent<HTMLFormElement>) => {
+    console.log(event);
   };
 
   if (!group) return <div>No group selected</div>;
@@ -114,29 +122,27 @@ function Group() {
         {/* body */}
         <div className="flex">
           <div className="flex flex-col flex-grow gap-4 px-6 py-4 border-r border-slate-200">
-            Select a group from the list or create one if you don't have one
-            yet. <br />
-            You can share the group key with your friends so they can join your
-            group.
+            <form onSubmit={handleSubmitSendFileForm}>
+              <Label htmlFor="file">File to send</Label>
+              <Input id="file" type="file" />
+            </form>
           </div>
           <div className="flex flex-col gap-4 px-6 py-4">
-            {messages.length === 0 && <p>No messages yet</p>}
+            {members.length === 0 && <p>No members yet</p>}
 
             <div className="flex flex-col gap-1">
-              {messages.map((msg) => (
-                <p
-                  key={msg.content}
-                  className="px-4 py-2 rounded hover:bg-slate-100"
-                >
-                  {msg.content}
+              {members.map((mbm) => (
+                <p key={mbm} className="px-4 py-2 rounded hover:bg-slate-100">
+                  {mbm}
                 </p>
               ))}
             </div>
-
-            <Button className="w-full" onClick={() => null}>
-              Create group
-            </Button>
           </div>
+        </div>
+        {/* footer */}
+        <div className="flex gap-2 items-center justify-end border-t border-slate-200 px-6 py-2">
+          <p className="text-xs">connected to group</p>
+          <div className="w-2 h-2 rounded bg-emerald-500"></div>
         </div>
       </Card>
     </div>

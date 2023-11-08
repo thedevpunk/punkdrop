@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -187,12 +188,17 @@ func handleWebSocketMessage(conn *websocket.Conn, userKey string, messageType in
 	case "candidate":
 		sendMessageToUser(socketMessage.Receiver, message)
 	case "entergroup":
-		enterGroup(userKey, socketMessage.Content)
+		groupKey := socketMessage.Content
+		enterGroup(userKey, groupKey)
+
+		group := groups[groupKey]
+		members := strings.Join(group, ",")
+
 		answer := SocketMessage{
-			Type:     "text",
+			Type:     "groupentered",
 			Sender:   "server",
 			Receiver: userKey,
-			Content:  "You have entered group: " + socketMessage.Content,
+			Content:  members,
 		}
 		msg, err := json.Marshal(answer)
 		if err != nil {
@@ -200,7 +206,11 @@ func handleWebSocketMessage(conn *websocket.Conn, userKey string, messageType in
 			return
 		}
 
-		sendMessageToUser(socketMessage.Sender, msg)
+		for _, member := range group {
+			sendMessageToUser(member, msg)
+		}
+
+		// sendMessageToUser(socketMessage.Sender, msg)
 	default:
 		fmt.Println("Unknown message type:", socketMessage.Type)
 	}

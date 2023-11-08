@@ -47,7 +47,14 @@ import { useEffect, useRef, useState } from "react";
 // };
 
 export type WebSocketMessage = {
-  type: "welcome" | "offer" | "answer" | "candidate" | "text" | "entergroup";
+  type:
+    | "welcome"
+    | "offer"
+    | "answer"
+    | "candidate"
+    | "text"
+    | "entergroup"
+    | "groupentered";
   sender: string;
   receiver: string;
   content: string;
@@ -59,6 +66,7 @@ export type WebSocketHookConfiguration = {
   answerHandler: (data: WebSocketMessage) => void;
   candidateHandler: (data: WebSocketMessage) => void;
   textHandler: (data: WebSocketMessage) => void;
+  groupenteredHandler: (data: WebSocketMessage) => void;
 };
 
 type WebSocketState = "pending" | "open" | "closed" | "error";
@@ -140,6 +148,12 @@ export const useWebSocket = (
         console.log("received text", data);
 
         config.textHandler(data);
+      }
+
+      if (data.type === "groupentered") {
+        console.log("received groupentered", data);
+
+        config.groupenteredHandler(data);
       }
     };
 
