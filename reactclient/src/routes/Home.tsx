@@ -9,6 +9,11 @@ import { ScrollArea } from "../components/ui/scroll-area";
 import { Copy, X } from "lucide-react";
 import { Group, useGroups } from "@/hooks/useGroups";
 import { Link, useParams } from "react-router-dom";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const generateRandomKey = (length: number) => {
   let result = "";
@@ -29,6 +34,18 @@ function Home() {
     const newGroup: Group = {
       key,
       name: key,
+    };
+    addGroup(newGroup);
+  };
+
+  const joinGroup = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const groupKey = event.currentTarget.groupKey.value;
+
+    const newGroup: Group = {
+      key: groupKey,
+      name: groupKey,
     };
     addGroup(newGroup);
   };
@@ -71,6 +88,23 @@ function Home() {
             <Button className="w-full" onClick={createNewGroup}>
               Create group
             </Button>
+            <Popover>
+              <PopoverTrigger>
+                <Button variant="ghost">Join group</Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <form onSubmit={joinGroup} className="flex flex-col gap-4">
+                  {/* <Label htmlFor="key">Group key</Label> */}
+                  <Input
+                    type="text"
+                    id="groupKey"
+                    name="groupKey"
+                    placeholder="Your group key"
+                  />
+                  <Button>Join</Button>
+                </form>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
