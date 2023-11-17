@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/thedevpunk/punkdrop/handlers"
 	// "github.com/pion/webrtc/v3"
 )
 
@@ -37,8 +37,8 @@ var connections = make(map[string]*websocket.Conn)
 
 var connectionMutex = sync.Mutex{}
 
-var groups = make(map[string][]string)
-var groupMutex = &sync.RWMutex{}
+// var groups = make(map[string][]string)
+// var groupMutex = sync.RWMutex{}
 
 func main() {
 	// config := webrtc.Configuration{
@@ -74,7 +74,13 @@ func main() {
 	// fmt.Println("Offer SDP:", offer.SDP)
 
 	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/group", groupHandler)
+
+	http.HandleFunc("/get-group", handlers.GetGroupHandler)
+	http.HandleFunc("/create-group", handlers.CreateGroupHandler)
+	http.HandleFunc("/join-group", func(w http.ResponseWriter, r *http.Request) {
+		handlers.JoinGroupHandler(w, r, sendMessageToUsers)
+	})
+
 	http.HandleFunc("/ws", websocketHandler)
 
 	port := 8080
@@ -85,27 +91,27 @@ func main() {
 	}
 }
 
-func groupHandler(w http.ResponseWriter, r *http.Request) {
-	groupKey := r.URL.Query().Get("group")
+// func groupHandler(w http.ResponseWriter, r *http.Request) {
+// 	groupKey := r.URL.Query().Get("group")
 
-	groupMutex.RLock()
-	group, ok := groups[groupKey]
-	groupMutex.RUnlock()
+// 	groupMutex.RLock()
+// 	group, ok := groups[groupKey]
+// 	groupMutex.RUnlock()
 
-	if !ok {
-		http.Error(w, "Group not found", http.StatusNotFound)
-		return
-	}
+// 	if !ok {
+// 		http.Error(w, "Group not found", http.StatusNotFound)
+// 		return
+// 	}
 
-	rtn, err := json.Marshal(group)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+// 	rtn, err := json.Marshal(group)
+// 	if err != nil {
+// 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(rtn)
-}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.Write(rtn)
+// }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	content, err := os.ReadFile(filepath.Join("web", "index.html"))
@@ -210,30 +216,30 @@ func handleWebSocketMessage(conn *websocket.Conn, userKey string, messageType in
 		sendMessageToUser(socketMessage.Receiver, message)
 	case "candidate":
 		sendMessageToUser(socketMessage.Receiver, message)
-	case "entergroup":
-		groupKey := socketMessage.Content
-		enterGroup(userKey, groupKey)
+	// case "entergroup":
+	// 	groupKey := socketMessage.Content
+	// 	enterGroup(userKey, groupKey)
 
-		group := groups[groupKey]
-		members := strings.Join(group, ",")
+	// 	group := groups[groupKey]
+	// 	members := strings.Join(group, ",")
 
-		answer := SocketMessage{
-			Type:     "groupentered",
-			Sender:   "server",
-			Receiver: userKey,
-			Content:  members,
-		}
-		msg, err := json.Marshal(answer)
-		if err != nil {
-			fmt.Println("Error marshalling JSON:", err)
-			return
-		}
+	// 	answer := SocketMessage{
+	// 		Type:     "groupentered",
+	// 		Sender:   "server",
+	// 		Receiver: userKey,
+	// 		Content:  members,
+	// 	}
+	// 	msg, err := json.Marshal(answer)
+	// 	if err != nil {
+	// 		fmt.Println("Error marshalling JSON:", err)
+	// 		return
+	// 	}
 
-		for _, member := range group {
-			sendMessageToUser(member, msg)
-		}
+	// 	for _, member := range group {
+	// 		sendMessageToUser(member, msg)
+	// 	}
 
-		// sendMessageToUser(socketMessage.Sender, msg)
+	// sendMessageToUser(socketMessage.Sender, msg)
 	default:
 		fmt.Println("Unknown message type:", socketMessage.Type)
 	}
@@ -252,22 +258,28 @@ func handleWebSocketMessage(conn *websocket.Conn, userKey string, messageType in
 	// }
 }
 
-func enterGroup(userKey string, groupKey string) {
-	groupMutex.Lock()
-	defer groupMutex.Unlock()
+// func enterGroup(userKey string, groupKey string) {
+// 	groupMutex.Lock()
+// 	defer groupMutex.Unlock()
 
-	if _, ok := groups[groupKey]; !ok {
-		groups[groupKey] = make([]string, 0)
+// 	if _, ok := groups[groupKey]; !ok {
+// 		groups[groupKey] = make([]string, 0)
+// 	}
+
+// 	// Does group contain userKey
+// 	for _, key := range groups[groupKey] {
+// 		if key == userKey {
+// 			return
+// 		}
+// 	}
+
+// 	groups[groupKey] = append(groups[groupKey], userKey)
+// }
+
+func sendMessageToUsers(userKeys []string, message []byte) {
+	for _, userKey := range userKeys {
+		sendMessageToUser(userKey, message)
 	}
-
-	// Does group contain userKey
-	for _, key := range groups[groupKey] {
-		if key == userKey {
-			return
-		}
-	}
-
-	groups[groupKey] = append(groups[groupKey], userKey)
 }
 
 func sendMessageToUser(userKey string, message []byte) {
