@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -27,6 +28,8 @@ func GetGroupHandler(w http.ResponseWriter, r *http.Request) {
 	groupsMutex.RLock()
 	group, ok := groups[groupKey]
 	groupsMutex.RUnlock()
+
+	fmt.Printf("Get group with key %s, name %s and members %s\n", group.Key, group.Name, strings.Join(group.Members, ", "))
 
 	if !ok {
 		http.Error(w, "Group not found", http.StatusNotFound)
@@ -68,11 +71,14 @@ func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 
 	groups[group.Key] = &group
 
+	fmt.Printf("Created group with key %s, name %s and members %s\n", group.Key, group.Name, strings.Join(group.Members, ", "))
+
 	// response := map[string]string{"status": "created", "groupKey": group.Key}
 	// w.Header().Set("Content-Type", "application/json")
 	// w.WriteHeader(http.StatusCreated)
 	// json.NewEncoder(w).Encode(response)
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
 }
 

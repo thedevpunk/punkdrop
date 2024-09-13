@@ -3,6 +3,12 @@ import { useEffect, useState } from "react";
 export type Group = {
   key: string;
   name: string;
+  members: Member[];
+};
+
+export type Member = {
+  key: string;
+  name: string;
 };
 
 const GROUPS_KEY = "groups";

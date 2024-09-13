@@ -1,4 +1,4 @@
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { WebSocketMessage, useWebSocket } from "../hooks/useWebSocket";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
@@ -14,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useIdentity } from "@/hooks/useIdentity";
 
 const generateRandomKey = (length: number) => {
   let result = "";
@@ -27,14 +28,28 @@ const generateRandomKey = (length: number) => {
 };
 
 function Home() {
+  const { identity } = useIdentity();
   const { groups, addGroup, removeGroup } = useGroups();
 
-  const createNewGroup = () => {
+  useEffect(() => {}, []);
+
+  const createNewGroup = async () => {
     const key = generateRandomKey(10);
     const newGroup: Group = {
       key,
       name: key,
     };
+
+    const response = await fetch(`http://localhost:8080/create-group`, {
+      method: "POST",
+      body: JSON.stringify(newGroup),
+    });
+
+    if (!response.ok) {
+      console.log(`Somethig went wrong creating the group: ${response.status}`);
+      return;
+    }
+
     addGroup(newGroup);
   };
 
@@ -61,6 +76,7 @@ function Home() {
         <div className="font-bold h-16 flex items-center justify-between gap-2 px-8 py-4 border-b border-slate-100">
           <div className="flex gap-2 items-center">
             <p>Punkdrop</p>
+            <p>{identity?.name}</p>
           </div>
         </div>
         {/* body */}
@@ -77,6 +93,7 @@ function Home() {
             <div className="flex flex-col gap-1">
               {groups.map((group) => (
                 <Link
+                  key={group.key}
                   to={`group/${group.key}`}
                   className="px-4 py-2 rounded hover:bg-slate-100"
                 >
@@ -89,7 +106,7 @@ function Home() {
               Create group
             </Button>
             <Popover>
-              <PopoverTrigger>
+              <PopoverTrigger asChild>
                 <Button variant="ghost">Join group</Button>
               </PopoverTrigger>
               <PopoverContent>
