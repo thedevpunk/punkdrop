@@ -7,6 +7,7 @@ require github.com/gorilla/websocket v1.5.0
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/pion/datachannel v1.5.5 // indirect
 	github.com/pion/dtls/v2 v2.2.7 // indirect
 	github.com/pion/ice/v2 v2.3.10 // indirect

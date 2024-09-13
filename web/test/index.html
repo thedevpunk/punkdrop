@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WebSocket Test Client</title>
+  </head>
+  <body>
+    <script>
+      const clientID = prompt("Enter your client ID:");
+      const socket = new WebSocket(`ws://localhost:8080/ws?id=${clientID}`);
+
+      socket.onopen = () => {
+        console.log("Connected to signaling server");
+
+        // Send a test message after connecting
+        const message = {
+          type: "test",
+          target: "another-client-id",
+          payload: "Hello, World!",
+        };
+        socket.send(JSON.stringify(message));
+      };
+
+      socket.onmessage = (message) => {
+        const data = JSON.parse(message.data);
+        console.log("Received message:", data);
+      };
+
+      socket.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+
+      socket.onclose = () => {
+        console.log("Disconnected from signaling server");
+      };
+    </script>
+  </body>
+</html>
