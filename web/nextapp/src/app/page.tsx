@@ -1,9 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
+
+type SocketMessage = {
+  type: string;
+  sender: string;
+  target: string;
+  payload: string;
+};
+
+type FileMetadata = {
+  fileName: string;
+  fileType: string;
+};
 
 export default function Home() {
-  const [socket, setSocket] = useState(null);
+  const [socket, setSocket] = useState<WebSocket | null>(null);
   const [clientID, setClientID] = useState("");
   const [targetID, setTargetID] = useState("");
   const [connected, setConnected] = useState(false);
@@ -11,12 +23,14 @@ export default function Home() {
   const peerConnection = useRef<RTCPeerConnection | null>(null);
   // const [dataChannel, setDataChannel] = useState(null);
   const dataChannel = useRef<RTCDataChannel | null>(null);
-  const [file, setFile] = useState(null);
-  const [receivedData, setReceivedData] = useState([]);
+  const [file, setFile] = useState<File | null>(null);
+  // const [receivedData, setReceivedData] = useState<ArrayBuffer[]>([]);
+  const receivedData = useRef<ArrayBuffer[]>([]);
   const [downloadUrl, setDownloadUrl] = useState("");
   const [status, setStatus] = useState("");
+  const [fileMetadata, setFileMetadata] = useState<FileMetadata | null>(null);
 
-  const fileReader = useRef<FileReader | null>(null);
+  // const fileReader = useRef<FileReader | null>(null);
 
   // ICE configuration
   const iceConfiguration = {
@@ -70,6 +84,7 @@ export default function Home() {
       if (event.candidate && targetID) {
         sendMessage({
           type: "candidate",
+          sender: clientID,
           target: targetID,
           payload: JSON.stringify(event.candidate),
         });
@@ -89,8 +104,10 @@ export default function Home() {
   };
 
   // Setup data channel events
-  const setupDataChannel = (channel) => {
+  const setupDataChannel = (channel: RTCDataChannel) => {
     dataChannel.current = channel;
+    channel.binaryType = "arraybuffer";
+    channel.bufferedAmountLowThreshold = 65536; // 64 KB
 
     channel.onopen = () => {
       console.log("Data channel is open");
@@ -104,34 +121,103 @@ export default function Home() {
       setConnected(false);
     };
 
+    channel.onerror = (error) => {
+      console.error("Data channel error:", error);
+      setStatus("Data channel error");
+    };
+
     channel.onmessage = (event) => {
       console.log("Received data:", event.data);
       receiveData(event.data);
     };
+
+    channel.onbufferedamountlow = () => {
+      console.log("Buffered amount is low, can send more data");
+    };
   };
 
-  // Handle receiving data
-  const receiveData = (data) => {
-    receivedData.push(data);
-    setReceivedData(receivedData);
+  // const setupDataChannel = (channel: RTCDataChannel) => {
+  //   dataChannel.current = channel;
 
-    // Assuming we receive 'END' as a signal to finish
-    if (data === "END") {
-      const blob = new Blob(receivedData);
-      const url = URL.createObjectURL(blob);
-      setDownloadUrl(url);
-      setReceivedData([]);
-      setStatus("File received");
+  //   channel.onopen = () => {
+  //     console.log("Data channel is open");
+  //     // setStatus("Data channel is open");
+  //     setConnected(true);
+  //   };
+
+  //   channel.onclose = () => {
+  //     console.log("Data channel is closed");
+  //     // setStatus("Data channel is closed");
+  //     setConnected(false);
+  //   };
+
+  //   channel.onmessage = (event) => {
+  //     console.log("Received data:", event.data);
+  //     receiveData(event.data);
+  //   };
+
+  //   channel.onerror = (error) => {
+  //     console.error("Data channel error:", error);
+  //     // setStatus("Data channel error");
+  //   };
+  // };
+
+  // Handle receiving data
+  const receiveData = (data: string | ArrayBuffer) => {
+    if (typeof data === "string") {
+      try {
+        const message = JSON.parse(data);
+        if (message.type === "metadata") {
+          setFileMetadata(message.data);
+          console.log("Received file metadata:", message.data);
+          return;
+        }
+      } catch (e) {
+        // Not JSON, proceed
+      }
+
+      if (data === "END") {
+        const blob = new Blob(receivedData.current, {
+          type: fileMetadata?.fileType,
+        });
+        const url = URL.createObjectURL(blob);
+        setDownloadUrl(url);
+        // setReceivedData([]);
+        receivedData.current = [];
+        setStatus("File received");
+        console.log("File received successfully");
+      } else {
+        console.log("Received string data:", data);
+      }
+    } else if (data instanceof ArrayBuffer) {
+      // setReceivedData((prevData) => [...prevData, data]);
+      receivedData.current.push(data);
+    } else {
+      console.warn("Received unknown data type");
     }
   };
 
+  // const receiveData = (data) => {
+  //   receivedData.push(data);
+  //   setReceivedData(receivedData);
+
+  //   // Assuming we receive 'END' as a signal to finish
+  //   if (data === "END") {
+  //     const blob = new Blob(receivedData);
+  //     const url = URL.createObjectURL(blob);
+  //     setDownloadUrl(url);
+  //     setReceivedData([]);
+  //     setStatus("File received");
+  //   }
+  // };
+
   // Send signaling message
-  const sendMessage = (message) => {
-    socket.send(JSON.stringify(message));
+  const sendMessage = (message: SocketMessage) => {
+    socket?.send(JSON.stringify(message));
   };
 
   // Handle offer from remote peer
-  const handleOffer = async (message) => {
+  const handleOffer = async (message: SocketMessage) => {
     await createPeerConnection();
 
     const desc = new RTCSessionDescription(JSON.parse(message.payload));
@@ -143,19 +229,20 @@ export default function Home() {
 
     sendMessage({
       type: "answer",
+      sender: clientID,
       target: message.sender,
       payload: JSON.stringify(answer),
     });
   };
 
   // Handle answer from remote peer
-  const handleAnswer = async (message) => {
+  const handleAnswer = async (message: SocketMessage) => {
     const desc = new RTCSessionDescription(JSON.parse(message.payload));
     await peerConnection.current?.setRemoteDescription(desc);
   };
 
   // Handle ICE candidate from remote peer
-  const handleCandidate = async (message) => {
+  const handleCandidate = async (message: SocketMessage) => {
     const candidate = new RTCIceCandidate(JSON.parse(message.payload));
     await peerConnection.current?.addIceCandidate(candidate);
   };
@@ -176,6 +263,7 @@ export default function Home() {
 
     // Create data channel
     const channel = peerConnection.current?.createDataChannel("fileTransfer");
+    if (!channel) throw new Error("Data channel creation failed");
     channel.binaryType = "arraybuffer";
     setupDataChannel(channel);
 
@@ -185,13 +273,16 @@ export default function Home() {
 
     sendMessage({
       type: "offer",
+      sender: clientID,
       target: targetID,
       payload: JSON.stringify(offer),
     });
   };
 
   // Handle file selection
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
     setFile(e.target.files[0]);
   };
 
@@ -202,18 +293,108 @@ export default function Home() {
       dataChannel.current &&
       dataChannel.current.readyState === "open"
     ) {
-      fileReader.current = new FileReader();
-      fileReader.current.onload = (e) => {
-        const arrayBuffer = e.target?.result;
-        dataChannel.current?.send(arrayBuffer);
-        dataChannel.current?.send("END"); // Signal end of file
-        setStatus("File sent");
+      const metadata = {
+        fileName: file.name,
+        fileType: file.type,
       };
-      fileReader.current.readAsArrayBuffer(file);
+      dataChannel.current.send(
+        JSON.stringify({ type: "metadata", data: metadata })
+      );
+
+      const CHUNK_SIZE = 16384; // 16 KB
+      let offset = 0;
+      const fileReader = new FileReader();
+
+      fileReader.onerror = (error) => {
+        console.error("FileReader error:", error);
+      };
+
+      fileReader.onabort = (event) => {
+        console.log("File reading aborted:", event);
+      };
+
+      fileReader.onload = (e) => {
+        const arrayBuffer = e.target?.result as ArrayBuffer;
+        if (arrayBuffer) {
+          sendChunk(arrayBuffer);
+        } else {
+          console.error("Failed to read file chunk");
+        }
+      };
+
+      const readSlice = (o: number) => {
+        const slice = file.slice(offset, o + CHUNK_SIZE);
+        fileReader.readAsArrayBuffer(slice);
+      };
+
+      const sendChunk = (chunk: ArrayBuffer) => {
+        if (!dataChannel.current) throw new Error("Data channel is null");
+
+        // Check if the data channel's buffer is full
+        if (
+          dataChannel.current?.bufferedAmount >
+          dataChannel.current?.bufferedAmountLowThreshold
+        ) {
+          // Wait for the 'bufferedamountlow' event
+          dataChannel.current.onbufferedamountlow = () => {
+            dataChannel.current?.send(chunk);
+            offset += CHUNK_SIZE;
+
+            if (offset < file.size) {
+              readSlice(offset);
+            } else {
+              // File transfer complete
+              dataChannel.current?.send("END");
+              setStatus("File sent");
+              console.log("File transfer completed");
+            }
+          };
+        } else {
+          dataChannel.current?.send(chunk);
+          offset += CHUNK_SIZE;
+
+          if (offset < file.size) {
+            readSlice(offset);
+          } else {
+            // File transfer complete
+            dataChannel.current?.send("END");
+            setStatus("File sent");
+            console.log("File transfer completed");
+          }
+        }
+      };
+
+      // Start reading and sending the first chunk
+      readSlice(0);
     } else {
       alert("Data channel is not open or file is not selected");
     }
   };
+
+  // const sendFile = () => {
+  //   if (
+  //     file &&
+  //     dataChannel.current &&
+  //     dataChannel.current.readyState === "open"
+  //   ) {
+  //     fileReader.current = new FileReader();
+  //     fileReader.current.onload = (e) => {
+  //       const arrayBuffer = e.target?.result;
+  //       if (!arrayBuffer) throw new Error("Array buffer is null");
+  //       if (!(arrayBuffer instanceof ArrayBuffer))
+  //         throw new Error("Not an ArrayBuffer");
+  //       dataChannel.current?.send(arrayBuffer);
+  //       dataChannel.current?.send("END"); // Signal end of file
+  //       // setStatus("File sent");
+  //     };
+  //     fileReader.current.onerror = (e) => {
+  //       console.error("FileReader error:", e);
+  //     };
+  //     fileReader.current.readAsArrayBuffer(file);
+  //   } else {
+  //     alert("Data channel is not open or file is not selected");
+  //   }
+  // };
 
   return (
     <div style={{ padding: "20px" }}>
@@ -253,7 +434,7 @@ export default function Home() {
 
       {downloadUrl && (
         <div>
-          <a href={downloadUrl} download="received_file">
+          <a href={downloadUrl} download={fileMetadata?.fileName}>
             Download Received File
           </a>
         </div>
