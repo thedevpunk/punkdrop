@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -11,9 +13,10 @@ import (
 
 // Client represents a connected client
 type Client struct {
-	ID   string
-	Conn *websocket.Conn
-	Pool *Pool
+	ID       string
+	Conn     *websocket.Conn
+	Pool     *Pool
+	PublicIP string
 }
 
 // Pool represents all connected clients
@@ -49,9 +52,11 @@ func (pool *Pool) Start() {
 		case client := <-pool.Register:
 			pool.Clients[client.ID] = client
 			fmt.Printf("Client %s connected\n", client.ID)
+			pool.broadcastClientList(client.PublicIP)
 		case client := <-pool.Unregister:
 			delete(pool.Clients, client.ID)
 			fmt.Printf("Client %s disconnected\n", client.ID)
+			pool.broadcastClientList(client.PublicIP)
 		case message := <-pool.Broadcast:
 			targetClient, ok := pool.Clients[message.Target]
 			if ok {
@@ -59,6 +64,32 @@ func (pool *Pool) Start() {
 				if err != nil {
 					log.Printf("Error sending message to %s: %v", targetClient.ID, err)
 				}
+			}
+		}
+	}
+}
+
+func (pool *Pool) broadcastClientList(publicIP string) {
+	clientList := []string{}
+	for _, client := range pool.Clients {
+		if client.PublicIP == publicIP {
+			clientList = append(clientList, client.ID)
+		}
+	}
+
+	message := Message{
+		Type:    "clientList",
+		Sender:  "server",
+		Target:  "broadcast",
+		Payload: strings.Join(clientList, ","),
+	}
+
+	// Send the updated client list to all clients with the same public IP
+	for _, client := range pool.Clients {
+		if client.PublicIP == publicIP {
+			err := client.Conn.WriteJSON(message)
+			if err != nil {
+				log.Printf("Error sending client list to %s: %v", client.ID, err)
 			}
 		}
 	}
@@ -72,6 +103,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func serveWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
+
 	// Parse client ID from query parameters
 	vars := r.URL.Query()
 	clientID := vars.Get("id")
@@ -87,10 +119,13 @@ func serveWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	publicIP, _, _ := net.SplitHostPort(r.RemoteAddr)
+
 	client := &Client{
-		ID:   clientID,
-		Conn: conn,
-		Pool: pool,
+		ID:       clientID,
+		Conn:     conn,
+		Pool:     pool,
+		PublicIP: publicIP,
 	}
 
 	pool.Register <- client

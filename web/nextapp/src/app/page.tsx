@@ -15,6 +15,7 @@ type FileMetadata = {
 };
 
 export default function Home() {
+  const [connectedClients, setConnectedClients] = useState<string[]>([]);
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [clientID, setClientID] = useState("");
   const [targetID, setTargetID] = useState("");
@@ -49,6 +50,11 @@ export default function Home() {
         console.log("Received message:", data);
 
         switch (data.type) {
+          case "clientList":
+            const payload = data.payload ? (data.payload as string) : "";
+            const clients = payload.split(",");
+            setConnectedClients(clients.filter((id) => id !== clientID));
+            break;
           case "offer":
             await handleOffer(data);
             break;
@@ -437,6 +443,19 @@ export default function Home() {
           <a href={downloadUrl} download={fileMetadata?.fileName}>
             Download Received File
           </a>
+        </div>
+      )}
+
+      {connectedClients.length > 0 && (
+        <div>
+          <h2>Connected Clients:</h2>
+          <ul>
+            {connectedClients.map((id) => (
+              <li key={id}>
+                {id} <button onClick={() => setTargetID(id)}>Connect</button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
