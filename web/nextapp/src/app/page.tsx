@@ -1,6 +1,7 @@
 "use client";
 
 import { generateRandomName } from "@/utils";
+import { IconBroadcast } from "@tabler/icons-react";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 
 type SocketMessage = {
@@ -354,14 +355,17 @@ export default function Home() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <p>
-        you are <b>{clientID}</b>
-      </p>
-      <h1>P2P File Transfer</h1>
-      <p>Status: {status}</p>
+    <div className="p-0 flex flex-col h-screen overflow-hidden">
+      {/* <div className="p-4 border-b border-gray-100 dark:border-gray-800"> */}
+      <div className="p-4">
+        <div className="flex items-center justify-between font-mono border-b border-black dark:border-white">
+          <h1>RadioTower</h1>
+          <p>Status: {status}</p>
+        </div>
+      </div>
 
-      {!socket && (
+      <div className="flex-1 p-4">
+        {/* {!socket && (
         <div>
           <input
             type="text"
@@ -371,9 +375,9 @@ export default function Home() {
           />
           <button onClick={connectToServer}>Connect to Signaling Server</button>
         </div>
-      )}
+      )} */}
 
-      {socket && !connected && (
+        {/* {socket && !connected && (
         <div>
           <input
             type="text"
@@ -383,35 +387,53 @@ export default function Home() {
           />
           <button onClick={startConnection}>Start Connection</button>
         </div>
-      )}
+      )} */}
 
-      {connected && (
-        <div>
-          <input type="file" onChange={handleFileChange} />
-          <button onClick={sendFile}>Send File</button>
-        </div>
-      )}
+        {connected && (
+          <div>
+            <input type="file" onChange={handleFileChange} />
+            <button onClick={sendFile}>Send File</button>
+          </div>
+        )}
 
-      {downloadUrl && (
-        <div>
-          <a href={downloadUrl} download={fileMetadata?.fileName}>
-            Download Received File
-          </a>
-        </div>
-      )}
+        {downloadUrl && (
+          <div>
+            <a href={downloadUrl} download={fileMetadata?.fileName}>
+              Download Received File
+            </a>
+          </div>
+        )}
 
-      {connectedClients.length > 0 && (
-        <div>
-          <h2>Connected Clients:</h2>
-          <ul>
-            {connectedClients.map((id) => (
-              <li key={id}>
-                {id} <button onClick={() => setTargetID(id)}>Connect</button>
-              </li>
-            ))}
-          </ul>
+        {connectedClients.length > 0 && (
+          <div>
+            <h2>Connected Clients:</h2>
+            <ul>
+              {connectedClients.map((id) => (
+                <li key={id}>
+                  {id} <button onClick={() => setTargetID(id)}>Connect</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      {/* <div className="p-4 border-t border-gray-100 dark:border-gray-800 mt-auto relative"> */}
+      <div className="p-4 mt-auto relative">
+        <div className="flex flex-col items-center justify-center">
+          <IconBroadcast className="w-12 h-12" />
+          <p className="text-xs">
+            you are <b>{clientID}</b>
+          </p>
         </div>
-      )}
+        <div>
+          <div className="-z-50 absolute bottom-[-5rem] left-[calc(50%-8rem)] w-[16rem] h-[16rem] border border-gray-100 dark:border-gray-900 rounded-full"></div>
+          <div className="-z-50 absolute bottom-[-12rem] left-[calc(50%-16rem)] w-[32rem] h-[32rem] border border-gray-100 dark:border-gray-900 rounded-full"></div>
+          <div className="-z-50 absolute bottom-[-19rem] left-[calc(50%-24rem)] w-[48rem] h-[48rem] border border-gray-100 dark:border-gray-900 rounded-full"></div>
+          <div className="-z-50 absolute bottom-[-27rem] left-[calc(50%-32rem)] w-[64rem] h-[64rem] border border-gray-100 dark:border-gray-900 rounded-full"></div>
+        </div>
+      </div>
     </div>
   );
 }
