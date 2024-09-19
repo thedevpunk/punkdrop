@@ -1,7 +1,6 @@
 "use client";
 
 import { generateRandomName } from "@/utils";
-import { connect } from "http2";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 
 type SocketMessage = {
@@ -16,10 +15,14 @@ type FileMetadata = {
   fileType: string;
 };
 
-export default function Home() {
+type Props = {
+  clientId: string;
+};
+
+export default function Dashboard({ clientId }: Props) {
   const [connectedClients, setConnectedClients] = useState<string[]>([]);
   const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [clientID, setClientID] = useState("");
+  const [clientID, setClientID] = useState(clientId);
   const [targetID, setTargetID] = useState("");
   const [connected, setConnected] = useState(false);
   // const [peerConnection, setPeerConnection] = useState(null);
@@ -84,10 +87,7 @@ export default function Home() {
       return;
     }
 
-    if (!clientID) {
-      setClientID(generateRandomName());
-      return;
-    }
+    setClientID(generateRandomName());
 
     connectToServer();
   }, [socket, clientID]);
