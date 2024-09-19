@@ -1,7 +1,6 @@
 "use client";
 
 import { generateRandomName } from "@/utils";
-import { connect } from "http2";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 
 type SocketMessage = {
@@ -39,6 +38,12 @@ export default function Home() {
   const iceConfiguration = {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
   };
+
+  useEffect(() => {
+    if (socket && targetID !== "") {
+      startConnection();
+    }
+  }, [targetID]);
 
   useEffect(() => {
     if (socket) {
@@ -98,7 +103,7 @@ export default function Home() {
 
     // Handle ICE candidates
     pc.onicecandidate = (event) => {
-      if (event.candidate && targetID) {
+      if (event.candidate && targetID !== "") {
         sendMessage({
           type: "candidate",
           sender: clientID,
