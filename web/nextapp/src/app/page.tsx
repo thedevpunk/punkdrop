@@ -1,8 +1,31 @@
 "use client";
 
+import Client from "@/components/Client";
 import { generateRandomName } from "@/utils";
 import { IconBroadcast } from "@tabler/icons-react";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
+
+// function getDeviceType() {
+//   const userAgent = navigator.userAgent;
+
+//   if (
+//     /iPad/.test(userAgent) ||
+//     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+//   ) {
+//     return "iPad";
+//   }
+//   if (/iPhone|iPod/.test(userAgent)) {
+//     return "iPhone";
+//   }
+//   if (/Android/.test(userAgent) && !/Mobi/.test(userAgent)) {
+//     return "Tablet";
+//   }
+//   if (/Windows NT|Macintosh|Linux/.test(userAgent)) {
+//     return "Desktop";
+//   }
+
+//   return "Unknown";
+// }
 
 type SocketMessage = {
   type: string;
@@ -405,15 +428,20 @@ export default function Home() {
         )}
 
         {connectedClients.length > 0 && (
-          <div>
-            <h2>Connected Clients:</h2>
-            <ul>
-              {connectedClients.map((id) => (
-                <li key={id}>
-                  {id} <button onClick={() => setTargetID(id)}>Connect</button>
-                </li>
-              ))}
-            </ul>
+          // <div>
+          //   <h2>Connected Clients:</h2>
+          //   <ul>
+          //     {connectedClients.map((id) => (
+          //       <li key={id}>
+          //         {id} <button onClick={() => setTargetID(id)}>Connect</button>
+          //       </li>
+          //     ))}
+          //   </ul>
+          // </div>
+          <div className="flex flex-wrap gap-8 justify-between px-16">
+            {connectedClients.map((id) => (
+              <Client key={id} name={id} connect={() => setTargetID(id)} />
+            ))}
           </div>
         )}
       </div>

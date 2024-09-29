@@ -52,6 +52,7 @@ func (pool *Pool) Start() {
 		case client := <-pool.Register:
 			pool.Clients[client.ID] = client
 			fmt.Printf("Client %s connected\n", client.ID)
+			fmt.Printf("Clients public IP is %s\n", client.PublicIP)
 			pool.broadcastClientList(client.PublicIP)
 		case client := <-pool.Unregister:
 			delete(pool.Clients, client.ID)
